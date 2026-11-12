@@ -72,6 +72,10 @@ def _quiet_logging() -> None:
 def _make_emulator(job: dict, stop_event: Any):
     import speakeasy
 
+    from . import emu_fixes
+
+    emu_fixes.apply()  # must precede Speakeasy(): handlers are bound per instance
+
     cfg = build_config(job.get("options"), job.get("config_overrides"))
     kwargs: dict[str, Any] = {"config": cfg, "argv": job.get("argv") or [], "exit_event": stop_event}
     if job.get("volumes"):
