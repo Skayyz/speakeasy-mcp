@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "speakeasy": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "exec bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/claude-mcp.sh\""
+      ]
+    }
+  }
+}

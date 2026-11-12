@@ -71,6 +71,13 @@ or in a project's `.mcp.json`:
 }
 ```
 
+### Claude Code on this repository
+
+Open a Claude Code session (local or cloud) on this repo and the server is already set up:
+`.mcp.json` registers `speakeasy` through `scripts/claude-mcp.sh`, and a SessionStart hook in
+`.claude/settings.json` installs it into `.venv` before the first call. Inputs and outputs are
+confined to `samples/` (gitignored); put samples there.
+
 Environment variables:
 
 | Variable | Default | Meaning |
