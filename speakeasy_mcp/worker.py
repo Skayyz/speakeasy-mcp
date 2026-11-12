@@ -69,9 +69,50 @@ def _quiet_logging() -> None:
         logging.getLogger(name).setLevel(logging.ERROR)
 
 
+_FIXES_APPLIED = False
+
+
+def _apply_emulator_fixes() -> None:
+    """Patch Speakeasy API handlers whose behaviour differs from Windows in ways samples hit.
+
+    kernel32.VirtualProtect: Speakeasy sizes the change from ``dwSize`` alone, ignoring the
+    offset of ``lpAddress`` within its page. Windows changes every page the byte range
+    touches, so ``VirtualProtect(0x47affd, 4, RW)`` covers 0x47a000 and 0x47b000. Loaders
+    that patch relocations dword by dword (HijackLoader's stub, for one) then fault with
+    ``invalid_protect_write`` on the first dword that straddles a page.
+    """
+    global _FIXES_APPLIED
+    if _FIXES_APPLIED:
+        return
+    try:
+        from speakeasy.winenv.api.usermode import kernel32 as k32mod
+    except Exception:  # noqa: BLE001 - other builds lay the package out differently
+        return
+    orig = getattr(k32mod.Kernel32, "VirtualProtect", None)
+    attrs = getattr(orig, "__apihook__", None)
+    if orig is None or attrs is None:
+        return
+
+    def VirtualProtect(self, emu, argv, ctx=None):  # noqa: N802 - Windows API name
+        lpAddress, dwSize, flNewProtect, lpflOldProtect = argv
+        if dwSize:
+            start = lpAddress & ~0xFFF
+            end = (lpAddress + dwSize + 0xFFF) & ~0xFFF
+            # Hand the original handler a page-aligned range; it rounds size up only
+            # from dwSize, so this makes it cover every touched page.
+            argv = [start, end - start, flNewProtect, lpflOldProtect]
+        return orig(self, emu, argv, ctx) if ctx is not None else orig(self, emu, argv)
+
+    VirtualProtect.__doc__ = orig.__doc__
+    VirtualProtect.__apihook__ = (attrs[0], VirtualProtect, *attrs[2:])
+    k32mod.Kernel32.VirtualProtect = VirtualProtect
+    _FIXES_APPLIED = True
+
+
 def _make_emulator(job: dict, stop_event: Any):
     import speakeasy
 
+    _apply_emulator_fixes()
     cfg = build_config(job.get("options"), job.get("config_overrides"))
     kwargs: dict[str, Any] = {"config": cfg, "argv": job.get("argv") or [], "exit_event": stop_event}
     if job.get("volumes"):

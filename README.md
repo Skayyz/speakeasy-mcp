@@ -99,5 +99,9 @@ blob and an endless API loop that checks the timeout path.
 
 - Speakeasy approximates Windows. A sample that needs an unmodelled API stops with an
   `unsupported_api` error. Check `report_summary` → `entry_points[].error`.
+- The worker patches Speakeasy's `kernel32.VirtualProtect` so that it changes every page the
+  byte range touches, as Windows does. Unpatched, a 4-byte protect that straddles a page
+  boundary only covers the first page, and loaders that fix up code dword by dword (e.g.
+  HijackLoader's stub) stop with `invalid_protect_write`.
 - .NET assemblies are not supported (Speakeasy raises `NotSupportedError`).
 - Report strings, paths and URLs come from the sample. Treat them as untrusted data.
