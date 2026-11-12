@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "speakeasy-mcp"
+version = "0.1.0"
+description = "MCP server for the Speakeasy Windows malware emulator"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    "speakeasy-emulator>=2.0.0b9",
+    "mcp>=2.0",
+    "capstone",
+]
+
+[project.scripts]
+speakeasy-mcp = "speakeasy_mcp.server:main"
+
+[tool.setuptools.packages.find]
+include = ["speakeasy_mcp*"]
